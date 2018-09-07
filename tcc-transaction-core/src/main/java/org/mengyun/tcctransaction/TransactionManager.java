@@ -10,6 +10,7 @@ import java.util.LinkedList;
 import java.util.concurrent.ExecutorService;
 
 /**
+ * 事务管理器
  * Created by changmingxie on 10/26/15.
  */
 public class TransactionManager {
@@ -18,6 +19,10 @@ public class TransactionManager {
 
     private TransactionRepository transactionRepository;
 
+    /**
+     * 当前线程事务队列
+     * 支持多个的事务独立存在，后创建的事务先提交。
+     */
     private static final ThreadLocal<Deque<Transaction>> CURRENT = new ThreadLocal<Deque<Transaction>>();
 
     private ExecutorService executorService;
@@ -33,14 +38,29 @@ public class TransactionManager {
     public TransactionManager() {
     }
 
+    /**
+     * 发起根事务
+     * 该方法在调用方法类型为 MethodType.ROOT 并且 事务处于 Try 阶段被调用
+     * @return 事务
+     */
     public Transaction begin() {
 
+        // 创建 根事务
         Transaction transaction = new Transaction(TransactionType.ROOT);
+        // 存储 事务
         transactionRepository.create(transaction);
+        // 注册事务到当前线程事务队列
         registerTransaction(transaction);
         return transaction;
     }
 
+    /**
+     * 传播发起分支事务
+     * 该方法在调用方法类型为 MethodType.PROVIDER 并且 事务处于 Try 阶段被调用。
+     *
+     * @param transactionContext 事务上下文
+     * @return 分支事务
+     */
     public Transaction propagationNewBegin(TransactionContext transactionContext) {
 
         Transaction transaction = new Transaction(transactionContext);
@@ -50,10 +70,19 @@ public class TransactionManager {
         return transaction;
     }
 
+    /**
+     * 传播获取分支事务
+     * 该方法在调用方法类型为 MethodType.PROVIDER 并且 事务处于 Confirm / Cancel 阶段被调用。
+     *
+     * @param transactionContext 事务上下文
+     * @return 分支事务
+     * @throws NoExistedTransactionException 当事务不存在时
+     */
     public Transaction propagationExistBegin(TransactionContext transactionContext) throws NoExistedTransactionException {
         Transaction transaction = transactionRepository.findByXid(transactionContext.getXid());
 
         if (transaction != null) {
+            // 设置事务状态为 CONFIRMING 或 CANCELLING
             transaction.changeStatus(TransactionStatus.valueOf(transactionContext.getStatus()));
             registerTransaction(transaction);
             return transaction;
@@ -62,18 +91,27 @@ public class TransactionManager {
         }
     }
 
+    /**
+     * 提交事务
+     * 该方法在事务处于 Confirm / Cancel 阶段被调用。
+     * @param asyncCommit
+     */
     public void commit(boolean asyncCommit) {
 
+        // 获取 事务
         final Transaction transaction = getCurrentTransaction();
 
+        // 设置 事务状态 为 CONFIRMING
         transaction.changeStatus(TransactionStatus.CONFIRMING);
 
+        // 更新 事务
         transactionRepository.update(transaction);
 
         if (asyncCommit) {
             try {
                 Long statTime = System.currentTimeMillis();
 
+                // 提交、删除 事务
                 executorService.submit(new Runnable() {
                     @Override
                     public void run() {
@@ -89,8 +127,13 @@ public class TransactionManager {
             commitTransaction(transaction);
         }
     }
-    
 
+
+    /**
+     * 回滚事务
+     * 该方法在事务处于 Confirm / Cancel 阶段被调用。
+     * @param asyncRollback
+     */
     public void rollback(boolean asyncRollback) {
 
         final Transaction transaction = getCurrentTransaction();
@@ -140,6 +183,7 @@ public class TransactionManager {
 
     public Transaction getCurrentTransaction() {
         if (isTransactionActive()) {
+            // 获得头部元素
             return CURRENT.get().peek();
         }
         return null;
@@ -151,12 +195,17 @@ public class TransactionManager {
     }
 
 
+    /**
+     * 注册事务到当前线程事务队列
+     * @param transaction 事务
+     */
     private void registerTransaction(Transaction transaction) {
 
         if (CURRENT.get() == null) {
             CURRENT.set(new LinkedList<Transaction>());
         }
 
+        // 添加到头部
         CURRENT.get().push(transaction);
     }
 
@@ -172,9 +221,17 @@ public class TransactionManager {
     }
 
 
+    /**
+     * 添加参与者到事务
+     *
+     * @param participant 参与者
+     */
     public void enlistParticipant(Participant participant) {
+        // 获取 事务
         Transaction transaction = this.getCurrentTransaction();
+        // 添加参与者
         transaction.enlistParticipant(participant);
+        // 更新 事务
         transactionRepository.update(transaction);
     }
 }

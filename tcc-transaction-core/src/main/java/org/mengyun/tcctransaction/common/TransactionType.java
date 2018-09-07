@@ -7,7 +7,14 @@ package org.mengyun.tcctransaction.common;
  */
 public enum TransactionType {
 
+    /**
+     * 根事务
+     */
     ROOT(1),
+
+    /**
+     * 分支事务
+     */
     BRANCH(2);
 
     int id;

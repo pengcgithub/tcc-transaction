@@ -21,12 +21,24 @@ import java.util.List;
  */
 public class JdbcTransactionRepository extends CachableTransactionRepository {
 
+    /**
+     * 领域 称为模块名，应用名，用于唯一标识一个资源
+     */
     private String domain;
 
+    /**
+     * 表后缀
+     */
     private String tbSuffix;
 
+    /**
+     * 数据源
+     */
     private DataSource dataSource;
 
+    /**
+     * 序列化
+     */
     private ObjectSerializer serializer = new KryoPoolSerializer();
 
     public String getDomain() {

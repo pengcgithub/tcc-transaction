@@ -14,12 +14,21 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 可缓存的事务存储器抽象类
+ * 实现增删改查事务时，同时缓存事务信息
+ * Guava
  * Created by changmingxie on 10/30/15.
  */
 public abstract class CachableTransactionRepository implements TransactionRepository {
 
+    /**
+     * 缓存过期时间
+     */
     private int expireDuration = 120;
 
+    /**
+     * 缓存
+     */
     private Cache<Xid, Transaction> transactionXidCompensableTransactionCache;
 
     @Override
@@ -44,6 +53,7 @@ public abstract class CachableTransactionRepository implements TransactionReposi
             }
         } finally {
             if (result <= 0) {
+                // 更新失败，移除缓存。下次访问，从存储器读取
                 removeFromCache(transaction);
             }
         }
@@ -95,14 +105,30 @@ public abstract class CachableTransactionRepository implements TransactionReposi
         transactionXidCompensableTransactionCache = CacheBuilder.newBuilder().expireAfterAccess(expireDuration, TimeUnit.SECONDS).maximumSize(1000).build();
     }
 
+    /**
+     * 添加到缓存
+     *
+     * @param transaction 事务
+     */
     protected void putToCache(Transaction transaction) {
         transactionXidCompensableTransactionCache.put(transaction.getXid(), transaction);
     }
 
+    /**
+     * 移除事务从缓存
+     *
+     * @param transaction 事务
+     */
     protected void removeFromCache(Transaction transaction) {
         transactionXidCompensableTransactionCache.invalidate(transaction.getXid());
     }
 
+    /**
+     * 获得事务从缓存中
+     *
+     * @param transactionXid 事务编号
+     * @return 事务
+     */
     protected Transaction findFromCache(TransactionXid transactionXid) {
         return transactionXidCompensableTransactionCache.getIfPresent(transactionXid);
     }
