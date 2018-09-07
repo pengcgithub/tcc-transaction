@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * 事务上下文
  * Created by changmingxie on 10/30/15.
  */
 public class TransactionContext implements Serializable {

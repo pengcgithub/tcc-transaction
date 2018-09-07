@@ -7,18 +7,31 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 
 /**
+ * 标记可补偿方法注解
  * Created by changmingxie on 10/25/15.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
 public @interface Compensable {
 
+    /**
+     * 传播级别
+     */
     public Propagation propagation() default Propagation.REQUIRED;
 
+    /**
+     * 确认执行业务方法
+     */
     public String confirmMethod() default "";
 
+    /**
+     * 取消执行业务方法
+     */
     public String cancelMethod() default "";
 
+    /**
+     * 事务上下文编辑
+     */
     public Class<? extends TransactionContextEditor> transactionContextEditor() default DefaultTransactionContextEditor.class;
 
     public boolean asyncConfirm() default false;
