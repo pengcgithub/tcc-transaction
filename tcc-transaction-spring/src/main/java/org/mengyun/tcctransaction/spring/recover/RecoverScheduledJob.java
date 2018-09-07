@@ -8,6 +8,7 @@ import org.springframework.scheduling.quartz.CronTriggerFactoryBean;
 import org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean;
 
 /**
+ * 事务恢复定时任务
  * Created by changming.xie on 6/2/16.
  */
 public class RecoverScheduledJob {
@@ -34,9 +35,10 @@ public class RecoverScheduledJob {
             cronTrigger.setJobDetail(jobDetail.getObject());
             cronTrigger.afterPropertiesSet();
 
+            // 启动任务调度
             scheduler.scheduleJob(jobDetail.getObject(), cronTrigger.getObject());
 
-
+            // 启动 Quartz Scheduler
             scheduler.start();
 
         } catch (Exception e) {
