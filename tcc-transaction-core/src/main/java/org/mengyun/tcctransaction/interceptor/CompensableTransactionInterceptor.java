@@ -93,6 +93,7 @@ public class CompensableTransactionInterceptor {
                 returnValue = pjp.proceed();
             } catch (Throwable tryingException) {
 
+                // 判断异常是否为延迟取消回滚异常，部分异常不适合立即回滚事务。
                 if (!isDelayCancelException(tryingException)) {
 
                     logger.warn(String.format("compensable transaction trying failed. transaction content:%s", JSON.toJSONString(transaction)), tryingException);

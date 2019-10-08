@@ -47,8 +47,10 @@ public class CompensableMethodUtils {
         // Propagation.REQUIRES_NEW：新建事务，如果当前存在事务，把当前事务挂起。
         if ((propagation.equals(Propagation.REQUIRED) && !isTransactionActive && transactionContext == null) ||
                 propagation.equals(Propagation.REQUIRES_NEW)) {
+            // 关键点：事务上下文参数必须为空
             return MethodType.ROOT;
         } else if ((propagation.equals(Propagation.REQUIRED) || propagation.equals(Propagation.MANDATORY)) && !isTransactionActive && transactionContext != null) {
+            // 关键点：上下文参数不能为空
             return MethodType.PROVIDER;
         } else {
             return MethodType.NORMAL;

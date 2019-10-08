@@ -8,6 +8,8 @@ import java.util.Arrays;
 import java.util.UUID;
 
 /**
+ * 事务编号( TransactionXid )，用于唯一标识一个事务。
+ *
  * Created by changmingxie on 10/26/15.
  */
 public class TransactionXid implements Xid, Serializable {
